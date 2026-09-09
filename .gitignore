@@ -1,0 +1,64 @@
+# ==========================================
+# Environments & Packages
+# ==========================================
+backend/venv/
+venv/
+env/
+ENV/
+.env
+.venv
+
+# ==========================================
+# Python & Byte-compiled / Optimised files
+# ==========================================
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+
+# ==========================================
+# Machine Learning & AI Weights / Large Models
+# ==========================================
+# PyTorch model weights & checkpoints
+*.pt
+*.pth
+*.bin
+*.onnx
+*.safetensors
+*.ckpt
+
+# OpenCV / ArUco generated temporary files/logs
+*.log
+
+# ==========================================
+# Operating System & IDE Specific
+# ==========================================
+# VS Code
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+
+# PyCharm / JetBrains
+.idea/
+
+# macOS / OS X
+.DS_Store
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ==========================================
+# Temporary Files & Exports
+# ==========================================
+tmp/
+temp/
+*.tmp
+*.bak
+*.swp
