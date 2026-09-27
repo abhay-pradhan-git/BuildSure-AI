@@ -1,40 +1,21 @@
 # BuildSure AI — Construction Risk & Safety Intelligence Platform
 
 An agentic AI-powered platform that monitors construction sites for **safety risks**, **PPE
-(Personal Protective Equipment) compliance**, and provides real-time risk intelligence through
-interactive dashboards.
+compliance**, **regulatory compliance**, **insurance underwriting risk**, and **multi-site
+enterprise reporting** — through a FastAPI backend and a React dashboard.
 
 ---
 
 ## Overview
 
-BuildSure AI combines a **FastAPI + PostgreSQL backend** with a **React + Tailwind CSS frontend**
-to deliver:
+BuildSure AI was built across four milestones, each adding a new AI "agent" to the platform:
 
-- **Site Risk Monitoring** — probability × impact risk heat maps, risk scoring, and hazard
-  distribution by type (fall, equipment, electrical, environmental).
-- **Safety Intelligence** — PPE compliance tracking, safety violation logging, and worker safety
-  KPIs.
-- **AI PPE Detection** — a computer-vision module (YOLOv8 + OpenCV) that analyzes uploaded site
-  photos to detect workers and check hard hat / safety vest compliance.
-
-This repository was built incrementally across two milestones:
-
-| Milestone | Focus |
-|---|---|
-| **Milestone 1** | Site Risk database, API, and dashboard |
-| **Milestone 2** | Safety Intelligence database, PPE detection agent, API, and dashboard |
-
----
-
-## Features
-
-- 📊 Interactive dashboards (Site Risk / Safety Intelligence / Unified Overview) with switchable views
-- 🗺️ Inherent vs. residual risk heat map matrices (5×5 probability × impact grid)
-- 🦺 PPE compliance breakdown by gear type (hard hats, vests, boots, gloves)
-- 📤 Drag-and-drop image upload for AI-based PPE detection with annotated bounding-box output
-- 🎥 Simulated live camera feed widget (placeholder for a real RTSP/camera integration)
-- 🔌 RESTful API built with FastAPI, with auto-generated Swagger docs at `/docs`
+| Milestone | Agent(s) | What it does |
+|---|---|---|
+| **1 — Site Risk** | Risk logic in `main.py` | Probability × impact risk heat maps, risk scoring |
+| **2 — Safety Intelligence** | `safety_agent.py`, `detect_ppe.py` | PPE compliance tracking, YOLOv8-based PPE detection (image + video) |
+| **3 — Compliance & Insurance** | `compliance_agent.py`, `insurance_agent.py` | OSHA/ISO 45001 regulatory checks, underwriting risk grading |
+| **4 — Enterprise & Predictive** | `enterprise_agent.py`, `predictive_agent.py` | Multi-site portfolio rollup, 48-hour risk forecasting, live IoT telemetry |
 
 ---
 
@@ -44,14 +25,12 @@ This repository was built incrementally across two milestones:
 - FastAPI — REST API framework
 - SQLModel / SQLAlchemy — ORM
 - PostgreSQL — database
-- Ultralytics YOLOv8 — computer vision (PPE detection)
-- OpenCV — image processing
+- Ultralytics YOLOv8 + OpenCV — PPE computer vision
 
 **Frontend**
 - React (Vite)
 - Tailwind CSS
 - lucide-react — icons
-- Recharts (optional, for chart-based views)
 
 ---
 
@@ -60,23 +39,37 @@ This repository was built incrementally across two milestones:
 ```
 buildsure-ai/
 ├── backend/
-│   ├── main.py                  # FastAPI app entrypoint, CORS, router mounting
-│   ├── db.py                    # Database engine + session management
-│   ├── models.py                # Milestone 1: Project, SiteRisk models
-│   ├── models_safety.py         # Milestone 2: PPEViolation, SafetyIncident models
-│   ├── schema.sql                # Milestone 1: raw SQL migration (projects, site_risks)
-│   ├── safety_schema.sql         # Milestone 2: raw SQL migration (ppe_violations, safety_incidents)
-│   ├── safety_agent.py           # Safety KPIs / breakdown / violation-logging endpoints
-│   ├── detect_ppe.py              # POST /api/v1/detect-ppe — image upload + CV detection
-│   ├── ppe_detection_agent.py     # Standalone CLI script for PPE detection (image/video/webcam)
+│   ├── main.py                    # FastAPI app entrypoint — CORS, router mounting, startup
+│   ├── db.py                      # Database engine + session management
+│   ├── models.py                  # Milestone 1: Project, SiteRisk models
+│   ├── models_safety.py           # Milestone 2: PPEViolation, SafetyIncident models
+│   ├── safety_agent.py            # Safety KPIs / breakdown / violation-logging endpoints
+│   ├── detect_ppe.py               # POST /detect-ppe and /detect-ppe-video — CV detection
+│   ├── ppe_detection_agent.py      # Standalone CLI script for PPE detection
+│   ├── compliance_agent.py         # Milestone 3: OSHA/ISO 45001 regulatory validation
+│   ├── insurance_agent.py          # Milestone 3: Underwriting risk grading (A–F)
+│   ├── enterprise_agent.py         # Milestone 4: Multi-site portfolio + report export
+│   ├── predictive_agent.py         # Milestone 4: 48h forecast + IoT telemetry + mitigation log
+│   ├── schema.sql                  # Milestone 1 raw SQL migration
+│   ├── safety_schema.sql           # Milestone 2 raw SQL migration
 │   └── requirements.txt
 │
 └── frontend/
     └── src/
-        └── components/
-            ├── SiteRiskDashboard.jsx     # Week 1-2 dashboard (Site Risk)
-            ├── SafetyDashboard.jsx        # Week 3-4 dashboard + Unified Overview + PPE upload
-            └── PPEDetectionUpload.jsx     # Standalone PPE upload/detection component
+        ├── App.jsx                          # Sidebar + header + active-view switcher
+        └── components/buildsure/
+            ├── glass-card.jsx                # Shared GlassCard / SectionTitle components
+            ├── sidebar.jsx                    # Left navigation (7 modules)
+            ├── header.jsx                     # Top bar with live clock
+            ├── utils.js                       # cn() class-name helper
+            └── views/
+                ├── unified-overview.jsx        # Cross-module KPI rollup
+                ├── site-risk.jsx                # Milestone 1 view
+                ├── safety-intelligence.jsx      # Milestone 2 view (PPE upload + detection)
+                ├── compliance-agent.jsx         # Milestone 3 view
+                ├── insurance-intelligence.jsx   # Milestone 3 view
+                ├── enterprise-portfolio.jsx     # Milestone 4 view
+                └── predictive-iot-console.jsx   # Milestone 4 view
 ```
 
 ---
@@ -93,8 +86,6 @@ buildsure-ai/
 
 ### 1. Database
 
-Create an empty PostgreSQL database:
-
 ```bash
 psql -U postgres
 CREATE DATABASE buildsure;
@@ -106,26 +97,19 @@ CREATE DATABASE buildsure;
 ```bash
 cd backend
 python -m venv venv
-
-# Activate the virtual environment
 source venv/bin/activate        # macOS/Linux
 venv\Scripts\activate           # Windows CMD
-$env:DATABASE_URL="..."; .\venv\Scripts\Activate.ps1   # Windows PowerShell (see below for DATABASE_URL)
+# or: $env:DATABASE_URL="..."; .\venv\Scripts\Activate.ps1   (Windows PowerShell)
 
 pip install -r requirements.txt
 ```
 
-Set your database connection string (replace `YOUR_PASSWORD`):
+Set your database connection string:
 
 ```bash
-# macOS/Linux
-export DATABASE_URL="postgresql+psycopg://postgres:YOUR_PASSWORD@localhost:5432/buildsure"
-
-# Windows PowerShell
-$env:DATABASE_URL="postgresql+psycopg://postgres:YOUR_PASSWORD@localhost:5432/buildsure"
-
-# Windows CMD
-set DATABASE_URL=postgresql+psycopg://postgres:YOUR_PASSWORD@localhost:5432/buildsure
+export DATABASE_URL="postgresql+psycopg://postgres:YOUR_PASSWORD@localhost:5432/buildsure"   # macOS/Linux
+$env:DATABASE_URL="postgresql+psycopg://postgres:YOUR_PASSWORD@localhost:5432/buildsure"      # PowerShell
+set DATABASE_URL=postgresql+psycopg://postgres:YOUR_PASSWORD@localhost:5432/buildsure         # CMD
 ```
 
 Run the API (tables are created automatically on startup):
@@ -134,7 +118,7 @@ Run the API (tables are created automatically on startup):
 uvicorn main:app --reload
 ```
 
-- API base URL: `http://localhost:8000`
+- API base: `http://localhost:8000`
 - Interactive docs: `http://localhost:8000/docs`
 
 ### 3. Frontend
@@ -142,7 +126,6 @@ uvicorn main:app --reload
 ```bash
 cd frontend
 npm install
-npm install recharts lucide-react
 npm run dev
 ```
 
@@ -152,44 +135,82 @@ npm run dev
 
 ## API Endpoints
 
+### Milestone 1 — Site Risk
 | Method | Endpoint | Description |
 |---|---|---|
-| `GET` | `/api/v1/site-risks/{project_id}` | Active-risk metrics: score, breakdown, high-risk zones |
-| `GET` | `/api/v1/site-risks/{project_id}/mock` | Mock version of the above (no DB rows required) |
-| `GET` | `/api/v1/safety/kpis/{project_id}` | PPE compliance rate, violations, workers monitored, safety score |
-| `GET` | `/api/v1/safety/breakdown/{project_id}` | PPE compliance % by gear type |
-| `POST` | `/api/v1/safety/violations` | Log a new PPE violation to the database |
-| `POST` | `/api/v1/detect-ppe` | Upload an image, get back annotated detections + compliance summary |
+| `GET` | `/api/v1/site-risks/{project_id}` | Active-risk metrics for a project |
+| `GET` | `/api/v1/site-risks/{project_id}/mock` | Mock version (no DB rows required) |
 
-Full request/response schemas are available in the Swagger UI at `/docs`.
+### Milestone 2 — Safety Intelligence
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/v1/safety/kpis/{project_id}` | PPE compliance rate, violations, workers monitored |
+| `GET` | `/api/v1/safety/breakdown/{project_id}` | PPE compliance % by gear type |
+| `POST` | `/api/v1/safety/violations` | Log a new PPE violation |
+| `POST` | `/api/v1/detect-ppe` | Upload an image → annotated detection + compliance summary |
+| `POST` | `/api/v1/detect-ppe-video` | Upload a video → sampled-frame detection + aggregate summary |
+
+### Milestone 3 — Compliance & Insurance
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/api/v1/compliance/validate` | Run + persist an OSHA/ISO 45001 audit |
+| `GET` | `/api/v1/compliance/report/{project_id}` | Latest compliance report summary |
+| `GET` | `/api/v1/insurance/assessment/{project_id}` | Live underwriting risk grade (A–F) |
+| `POST` | `/api/v1/insurance/underwrite` | Persist a formal underwriting record |
+
+### Milestone 4 — Enterprise & Predictive
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/v1/enterprise/portfolio` | Multi-site rollup (risk, crew, compliance per site) |
+| `GET` | `/api/v1/enterprise/benchmark` | Cross-site PPE compliance vs. hazard counts |
+| `POST` | `/api/v1/enterprise/report/export` | Request an executive report (PDF/CSV/XLSX) |
+| `GET` | `/api/v1/predictive/forecast/{site_id}` | 48-hour risk projection |
+| `GET` | `/api/v1/predictive/telemetry/{site_id}` | Live IoT sensor readings (wind, noise, AQI, thermal) |
+| `GET` | `/api/v1/predictive/mitigations/{site_id}` | Latest autonomous mitigation actions |
+
+Full request/response schemas are in the Swagger UI at `/docs`.
 
 ---
 
 ## ⚠️ Known Limitations (Important)
 
-- **The PPE detection model is currently running in `MOCK_MODE`.** `detect_ppe.py` and
-  `ppe_detection_agent.py` both generate *synthetic* worker/gear bounding boxes rather than
-  performing real computer-vision inference. This lets the full pipeline (API, drawing, dashboard)
-  be built and tested end-to-end without a trained model.
-- To enable **real detection**, you need to:
-  1. Fine-tune a YOLOv8 model on a labeled PPE dataset (see the Roadmap below).
-  2. Save the resulting weights as `backend/ppe_yolov8.pt`.
-  3. Set `MOCK_MODE = False` in both `detect_ppe.py` and `ppe_detection_agent.py`.
-- Several KPI endpoints (`/safety/kpis`, `/safety/breakdown`) currently return **illustrative
-  mock values** matching the dashboard mockups, not live database aggregates. Swap these for real
-  queries once enough violation/incident data exists.
+- **PPE detection runs in `MOCK_MODE`.** `detect_ppe.py` and `ppe_detection_agent.py` generate
+  synthetic worker/gear bounding boxes rather than performing real computer-vision inference,
+  until a YOLOv8 model is fine-tuned on a real PPE dataset and `MOCK_MODE = False` is set.
+- **Several KPI endpoints return illustrative mock values**, not live database aggregates
+  (`/safety/kpis`, `/safety/breakdown`, `/enterprise/benchmark`) — these fall back to mock data
+  only when no real rows exist yet, and will automatically start returning real data once
+  seeded.
+- **`POST /enterprise/report/export` does not generate a real file.** There's no PDF/CSV/XLSX
+  rendering service yet — it returns a structured mock response with a placeholder download URL.
+- **`GET /predictive/forecast/{site_id}` is not a trained model.** It's a deterministic mock
+  curve with a small per-site variation, since no historical weather/crane/crew dataset exists
+  to train on.
+- **The frontend is not yet connected to most of the backend.** Only `compliance-agent.jsx` and
+  `safety-intelligence.jsx`'s PPE upload widget currently call real endpoints — the rest of the
+  views (`site-risk.jsx`, `insurance-intelligence.jsx`, `enterprise-portfolio.jsx`,
+  `predictive-iot-console.jsx`, `unified-overview.jsx`) still use local mock data arrays.
+- **"Unresolved incidents" (insurance) and "open hazards" (enterprise benchmark) are proxies** —
+  the underlying tables don't yet have a resolved/open status field, so current counts may
+  overcount until that field is added.
 
 ---
 
 ## Roadmap
 
-- [ ] Train a YOLOv8 model on a labeled PPE dataset (e.g. Roboflow Universe "Construction Site
-      Safety Dataset", which includes `Hardhat` / `NO-Hardhat` / `Safety Vest` / `NO-Safety Vest`
-      classes) using Google Colab's free GPU.
-- [ ] Replace mock KPI endpoints with real database aggregation queries.
-- [ ] Connect the live camera widget to a real RTSP/camera stream.
-- [ ] Add a Compliance Agent and Insurance Agent (Milestone 3).
-- [ ] Add authentication and multi-project support to the frontend.
+- [ ] Train a YOLOv8 model on a labeled PPE dataset (e.g. Roboflow's "Construction Site Safety
+      Dataset") and disable mock mode in `detect_ppe.py`.
+- [ ] Connect remaining frontend views to their real backend endpoints.
+- [ ] Add a `POST /api/v1/projects` endpoint so real projects can be created (currently only
+      mock/placeholder project IDs work against the non-mock endpoints).
+- [ ] Add a resolved/open status field to `SafetyIncident` for accurate "unresolved incidents"
+      counts.
+- [ ] Wire up a real report-generation service (PDF/CSV/XLSX) for the Enterprise export flow.
+- [ ] Replace the mock 48-hour forecast with a real predictive model once historical data exists.
+- [ ] Add authentication and multi-project support.
 
 ---
 
+## License
+
+Add your license of choice here (e.g. MIT).
